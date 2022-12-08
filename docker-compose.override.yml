@@ -1,0 +1,47 @@
+services:
+
+  auth:
+    ports:
+      - 8000:8000
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+       - pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - movies
+    restart: unless-stopped
+
+  tests:
+    container_name: auth_tests
+    image: auth
+    environment:
+      REDIS__HOST: redis
+      POSTGRES__HOST: postgres
+      POSTGRES__USER: ${POSTGRES__USER}
+      POSTGRES__PASSWORD: ${POSTGRES__PASSWORD}
+      POSTGRES__DB_NAME: ${POSTGRES__DB_NAME}
+      APP__JWT_SECRET_KEY: ${APP__JWT_SECRET_KEY}
+      SUPERUSER__USERNAME: ${SUPERUSER__USERNAME}
+      SUPERUSER__PASSWORD: ${SUPERUSER__PASSWORD}
+    networks:
+      - movies
+    entrypoint: "bash -c 'python3 app_init.py && python3 -m unittest discover -s tests'"
+    depends_on:
+      - redis
+      - postgres
