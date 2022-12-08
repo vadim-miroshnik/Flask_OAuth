@@ -18,3 +18,43 @@
 Реализуйте возможность открепить аккаунт в соцсети от личного кабинета. 
 
 Решение залейте в репозиторий текущего спринта и отправьте на ревью.
+
+
+####
+
+
+# Проектная работа 6 спринта
+
+Ссылка на репозиторий
+
+https://github.com/dimkaddi/Auth_sprint_1
+
+
+## Работа с проектом
+
+Запустить проект на продакшене:
+    
+    make prod_run
+
+Сбилдить образ:
+
+    make build 
+
+Запустить окружение
+  
+    make run_environment
+
+Запустить сервис или его тесты
+
+    make run_service
+    make run_tests
+
+Swagger-схема доступна по:
+
+http://127.0.0.1/apidocs
+
+По дефолту создан пользователь superuser c паролем super_password
+
+Для авторизации ендпоинтов в api в поле Authorization перед токеном необходимо добавлят JWT:
+
+    JWT eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzAyNTg0MDgsImlhdCI6MTY3MDI1NzgwOCwibmJmIjoxNjcwMjU3ODA4LCJzdWIiOiJcImI5NjZhOGVjMmZiNTRlYjFiNmRiMTYwZDMwZDQ1YzdkXCIiLCJyb2xlIjoic3VwZXJ1c2VyIn0.zwysTVm9vkkGYIVB76GyDfW47TlioP0tYuTxOyciSs0
