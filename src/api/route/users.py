@@ -18,11 +18,19 @@ from models.login_history import Login
 from api.route.error_messages import ErrMsgEnum
 from sqlalchemy_paginator import Paginator
 
+from time import time
+from rate_limiter.limiter import DurationEnum
+from rate_limiter.limiter import Limiter
+from rate_limiter.request_rate import RequestRate
+from rate_limiter.redis_bucket import RedisBucket
+from api.route.decorators import rate_limit
 
 users_api = Blueprint("users", __name__)
 
 CACHE_EXPIRE_IN_SECONDS = 60 * 60 * 24 * 7
 PAGE_SIZE = 10
+
+limiter = Limiter[RedisBucket](RequestRate(10, DurationEnum.SECOND), time_function=time)
 
 @users_api.route("/register", methods=["POST"])
 @swag_from(
@@ -342,4 +350,27 @@ def refresh():
         return jsonify(dict(access_token=access_token.decode("utf-8"))), HTTPStatus.OK
     else:
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
+
+@users_api.route("/test", methods=["GET"])
+@swag_from(
+    {
+        "tags": ["users"],
+        "responses": {
+            HTTPStatus.OK.value: {
+                "description": "Test",
+                "schema": {"type": "string"},
+            },
+            HTTPStatus.TOO_MANY_REQUESTS.value: {
+                "description": "Too many requests",
+                "schema": {"type": "string"},
+            },
+        },
+    }
+)
+#@limiter.ratelimit("test")
+@rate_limit(3)
+def test():
+    return "test", HTTPStatus.OK
+
+
 
