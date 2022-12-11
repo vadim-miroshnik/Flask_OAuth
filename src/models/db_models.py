@@ -9,6 +9,7 @@ import string
 import uuid
 
 import jwt
+from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
 from pbkdf2 import crypt
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -17,7 +18,6 @@ from sqlalchemy.sql import func
 from core.db import db
 from core.settings import settings
 from models.uuid_encoder import UUIDEncoder
-
 
 association_user_roles = db.Table(
     "association_user_roles",
@@ -29,7 +29,13 @@ association_user_roles = db.Table(
 
 class User(db.Model):
     __tablename__ = "users"
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    id = db.Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
     login = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     roles = db.relationship("Role", secondary=association_user_roles)
@@ -41,7 +47,9 @@ class User(db.Model):
     @plain_password.setter
     def plain_password(self, plaintext):
         alphabet = string.ascii_letters + string.digits
-        salt = "".join(secrets.choice(alphabet) for _ in range(settings.app.salt_length))
+        salt = "".join(
+            secrets.choice(alphabet) for _ in range(settings.app.salt_length)
+        )
         hpswd = crypt(plaintext, salt, iterations=settings.app.psw_hash_iterations)
         parts_hpswd = hpswd.split("$")
         self.password = f"{parts_hpswd[3]}{parts_hpswd[4]}"
@@ -81,7 +89,13 @@ class User(db.Model):
 
 class Role(db.Model):
     __tablename__ = "roles"
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    id = db.Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    )
     users = db.relationship("User", secondary=association_user_roles)
     name = db.Column(db.String, nullable=False, unique=True)
     permissions = db.relationship("Permission", cascade="all,delete")
@@ -102,3 +116,9 @@ class Token(db.Model):
     id = db.Column(db.String, nullable=False, primary_key=True)
     time_created = db.Column(db.DateTime, server_default=func.now())
     expired_time = db.Column(db.DateTime)
+
+
+class OAuth(OAuthConsumerMixin, db.Model):
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey(User.id))
+    provider_user_id = db.Column(db.String)
+    user = db.relationship(User)

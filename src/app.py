@@ -6,7 +6,7 @@ from flask_jwt import JWT
 from flask_migrate import Migrate
 
 from api.route.crud import api_admin_permission, api_admin_role, api_admin_user
-from api.route.users import users_api
+from api.route.users import users_api, google_blueprint
 from core.db import db
 from core.login_manager import authenticate, identity, login_manager
 from core.redis import redis
@@ -18,6 +18,7 @@ swagger = Swagger(app)
 migrate = Migrate(app, db)
 
 app.register_blueprint(users_api, url_prefix="/api/users")
+app.register_blueprint(google_blueprint, url_prefix="/api/users/login")
 app.register_blueprint(api_admin_user, url_prefix="/api/admin/user")
 app.register_blueprint(api_admin_role, url_prefix="/api/admin/role")
 app.register_blueprint(api_admin_permission, url_prefix="/api/admin/permission")
