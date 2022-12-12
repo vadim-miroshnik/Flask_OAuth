@@ -1,17 +1,12 @@
-"""Limiter of requests using Leacky Bucket algorithm."""
+"""Ограничитель запросов, использующий алгоритм протекающего ведра."""
 
-from time import monotonic
-from typing import Any
-from typing import Callable
-from typing import Union
 from enum import IntEnum
-from typing import TypeVar, Generic
+from time import monotonic
+from typing import Callable, Generic, TypeVar, Union
 
-from rate_limiter.exceptions import InvalidParams
-from rate_limiter.exceptions import BucketFullException
-from rate_limiter.request_rate import RequestRate
-from rate_limiter.redis_bucket import RedisBucket
 from rate_limiter.decorator import LimitDecorator
+from rate_limiter.exceptions import BucketFullException, InvalidParams
+from rate_limiter.request_rate import RequestRate
 
 T = TypeVar("T")
 
@@ -25,49 +20,52 @@ class DurationEnum(IntEnum):
 
 
 class Limiter(Generic[T]):
+    """Ограничитель запросов."""
 
     def __init__(
         self,
         *rates: RequestRate,
-        bucket_class: type = RedisBucket,
         bucket_kwargs: dict[str, any] = None,
         time_function: Callable[[], float] = None,
     ):
-        self.validate_rate_list(rates)
-        self.rates = rates
-        self.bucket_args = bucket_kwargs or {}
-        self.bucket_group: dict[str, RedisBucket] = {}
+        self._validate_rate_list(rates)
+        self._rates = rates
+        self._bucket_args = bucket_kwargs or {}
+        self.bucket_group: dict[str, T] = {}
         self.time_function = monotonic
         if time_function is not None:
             self.time_function = time_function
         self.time_function()
 
-    def validate_rate_list(self, rates):
+    def _validate_rate_list(self, rates):
+        """Валидация частоты запросов."""
         if not rates:
             raise InvalidParams("Rate(s) must be provided")
 
         for idx, rate in enumerate(rates[1:]):
             prev_rate = rates[idx]
-            invalid = rate.limit <= prev_rate.limit or rate.interval <= prev_rate.interval
+            invalid = (
+                rate.limit <= prev_rate.limit or rate.interval <= prev_rate.interval
+            )
             if invalid:
                 raise InvalidParams(f"{prev_rate} cannot come before {rate}")
 
-    def init_buckets(self, identities) -> None:
+    def _init_buckets(self, identities) -> None:
+        """Инициализация корзины."""
         typ = self.__orig_class__.__args__[0]
         maxsize = self.rates[-1].limit
         for identity in sorted(identities):
             if not self.bucket_group.get(identity):
                 self.bucket_group[identity] = typ(
-                    maxsize=maxsize,
-                    identity=identity,
-                    **self.bucket_args,
+                    maxsize=maxsize, identity=identity, **self._bucket_args,
                 )
 
     def try_acquire(self, *identities: str) -> None:
-        self.init_buckets(identities)
+        """Проверка на выполнение запроса."""
+        self._init_buckets(identities)
         now = self.time_function()
 
-        for rate in self.rates:
+        for rate in self._rates:
             for identity in identities:
                 bucket = self.bucket_group[identity]
                 volume = bucket.size()
@@ -75,11 +73,13 @@ class Limiter(Generic[T]):
                 if volume < rate.limit:
                     continue
 
-                item_count, remaining_time = bucket.inspect_expired_items(now - rate.interval)
+                item_count, remaining_time = bucket.inspect_expired_items(
+                    now - rate.interval
+                )
                 if item_count >= rate.limit:
                     raise BucketFullException(identity, rate, remaining_time)
 
-                if rate is self.rates[-1]:
+                if rate is self._rates[-1]:
                     bucket.get(volume - item_count)
 
         for identity in identities:
@@ -91,13 +91,11 @@ class Limiter(Generic[T]):
         delay: bool = False,
         max_delay: Union[int, float] = None,
     ):
+        """Вызов декоратора."""
         return LimitDecorator(self, *identities, delay=delay, max_delay=max_delay)
 
-    def get_current_volume(self, identity) -> int:
-        bucket = self.bucket_group[identity]
-        return bucket.size()
-
     def flush_all(self) -> int:
+        """Очистка корзины."""
         cnt = 0
 
         for _, bucket in self.bucket_group.items():
@@ -105,3 +103,11 @@ class Limiter(Generic[T]):
             cnt += 1
 
         return cnt
+
+
+'''
+    def get_current_volume(self, identity) -> int:
+        """"""
+        bucket = self.bucket_group[identity]
+        return bucket.size()
+'''

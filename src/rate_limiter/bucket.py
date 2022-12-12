@@ -1,46 +1,45 @@
-"""Base bucket interface."""
+"""Базовый класс корзины, используемой для ограничения запросов."""
 
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 
 class AbstractBucket(ABC):
-    """Base bucket interface."""
+    """Базовый класс корзины."""
 
     def __init__(self, maxsize: int = 0, **kwargs):
         self._max_size = maxsize
 
     def maxsize(self) -> int:
-        """Get max size of the bucket"""
+        """Максимальный размер корзины."""
         return self._max_size
 
     @abstractmethod
     def size(self) -> int:
-        """Get current size of the bucket."""
+        """Текущий размер корзины."""
         pass
 
     @abstractmethod
     def put(self, item: float) -> int:
-        """Put current time in the bucket."""
+        """Внести объект в корзину."""
         pass
 
     @abstractmethod
     def get(self, number: int) -> int:
-        """Get items from the bucket."""
+        """Получить количество объектов в корзине."""
         pass
 
     @abstractmethod
     def all_items(self) -> list[float]:
-        """Get all items in the bucket."""
+        """Все объекты в корзине."""
         pass
 
     @abstractmethod
     def flush(self) -> None:
-        """Flush bucket."""
+        """Сбррс корзины."""
         pass
 
     def inspect_expired_items(self, time: float) -> tuple[int, float]:
-        """Number of unexpired items and next time to expire."""
+        """Получение списка 'живых' объектов в корзине."""
         volume = self.size()
         item_count, remaining_time = 0, 0.0
 

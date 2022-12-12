@@ -1,4 +1,4 @@
-"""Request rates for limiter."""
+"""Ограничение запросов."""
 
 from enum import IntEnum
 
@@ -11,7 +11,7 @@ class ResetTypesEnum(IntEnum):
 
 
 class RequestRate:
-    """Request rate definition."""
+    """Определение ограничения запросов."""
 
     def __init__(
         self,
