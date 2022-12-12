@@ -14,7 +14,21 @@ from rate_limiter.redis_bucket import RedisBucket
 
 from models.db_models import Permission
 
-rates = dict()
+
+class Singleton(type):
+    _instance = None
+    def __call__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__call__(*args, **kwargs)
+        return cls._instance
+
+
+class Rates(dict, metaclass=Singleton):
+    pass
+
+
+rates = Rates()
+
 
 def login_user():
     try:
@@ -24,7 +38,6 @@ def login_user():
         return current_identity
     except ImportError:
         abort(HTTPStatus.UNAUTHORIZED, description="User argument not passed")
-        #raise ImportError("User argument not passed")
 
 
 def user_has(permission, get_user=login_user):
@@ -63,16 +76,16 @@ def rate_limit(reqs_in_sec, get_user=login_user):
     def wrapper(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            limiter = None
-            if reqs_in_sec not in rates.keys():
+            if not (limiter := rates.get(reqs_in_sec)):
                 rate = RequestRate(reqs_in_sec, DurationEnum.SECOND)
                 limiter = Limiter[RedisBucket](rate)
                 rates[reqs_in_sec] = limiter
-            else:
-                limiter = rates.get(reqs_in_sec)
 
             current_user = get_user()
-            with limiter.ratelimit(current_user, delay=True):
+            if not current_user:
+                current_user = "Anonymous"
+
+            with limiter.ratelimit(current_user, delay=False):
                 return func(*args, **kwargs)
 
         return inner

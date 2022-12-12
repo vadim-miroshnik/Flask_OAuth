@@ -368,7 +368,7 @@ def refresh():
     }
 )
 #@limiter.ratelimit("test")
-@rate_limit(3)
+@rate_limit(15)
 def test():
     return "test", HTTPStatus.OK
 

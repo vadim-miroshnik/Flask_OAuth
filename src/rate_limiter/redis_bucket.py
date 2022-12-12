@@ -51,7 +51,7 @@ class RedisBucket(AbstractBucket):
             pipeline = self.get_pipeline()
             pipeline.rpush(self._bucket_name, item)
 
-            if self.expire_time is not None:
+            if self._expire_time is not None:
                 pipeline.expire(self._bucket_name, self._expire_time)
 
             pipeline.execute()

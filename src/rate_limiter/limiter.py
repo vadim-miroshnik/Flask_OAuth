@@ -3,6 +3,7 @@
 from enum import IntEnum
 from time import monotonic
 from typing import Callable, Generic, TypeVar, Union
+import logging
 
 from rate_limiter.decorator import LimitDecorator
 from rate_limiter.exceptions import BucketFullException, InvalidParams
@@ -53,7 +54,7 @@ class Limiter(Generic[T]):
     def _init_buckets(self, identities) -> None:
         """Инициализация корзины."""
         typ = self.__orig_class__.__args__[0]
-        maxsize = self.rates[-1].limit
+        maxsize = self._rates[-1].limit
         for identity in sorted(identities):
             if not self.bucket_group.get(identity):
                 self.bucket_group[identity] = typ(
@@ -103,11 +104,3 @@ class Limiter(Generic[T]):
             cnt += 1
 
         return cnt
-
-
-'''
-    def get_current_volume(self, identity) -> int:
-        """"""
-        bucket = self.bucket_group[identity]
-        return bucket.size()
-'''
