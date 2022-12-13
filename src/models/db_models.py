@@ -10,6 +10,7 @@ import uuid
 
 import jwt
 from pbkdf2 import crypt
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
@@ -33,6 +34,7 @@ class User(db.Model):
     login = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     roles = db.relationship("Role", secondary=association_user_roles)
+    signin = db.relationship("Login", cascade="all,delete")
 
     @hybrid_property
     def plain_password(self):

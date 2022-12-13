@@ -19,3 +19,4 @@ gunicorn[gevent]==20.1.0
 SQLAlchemy-Paginator==0.2
 Flask-Migrate==4.0.0
 psycogreen==1.0.2
+user-agents==2.2.0

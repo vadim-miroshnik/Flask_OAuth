@@ -17,7 +17,7 @@ from models.db_models import User
 from models.login_history import Login
 from api.route.error_messages import ErrMsgEnum
 from sqlalchemy_paginator import Paginator
-
+from user_agents import parse
 
 users_api = Blueprint("users", __name__)
 
@@ -68,7 +68,7 @@ def register():
             login=login,
             dt=datetime.datetime.utcnow(),
             ip=request.remote_addr,
-            user_agent=user_agent,
+            raw_user_agent=user_agent,
         )
         db.session.add(login_user)
         db.session.commit()
@@ -126,12 +126,12 @@ def login():
                 }
 
                 user_agent = request.headers["User-Agent"]
-
+                logging.info(user_agent)
                 login_user = Login(
                     login=login,
                     dt=datetime.datetime.utcnow(),
                     ip=request.remote_addr,
-                    user_agent=user_agent,
+                    raw_user_agent=user_agent,
                 )
                 db.session.add(login_user)
                 db.session.commit()
