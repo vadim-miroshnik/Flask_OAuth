@@ -37,7 +37,7 @@ class Login(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"))
     dt = db.Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    login = db.Column(db.String, nullable=False, default=datetime.datetime.utcnow)
+    login = db.Column(db.String, nullable=False)
     ip = db.Column(db.String, nullable=False)
     user_agent = db.Column(db.String, nullable=False)
     user_device_type = db.Column(db.Text, primary_key=True)
