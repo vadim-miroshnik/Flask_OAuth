@@ -6,12 +6,7 @@ from http import HTTPStatus
 
 from flasgger import swag_from
 from flask import Blueprint, abort, jsonify, request
-from flask_dance.consumer import OAuth2ConsumerBlueprint, oauth_authorized
-from flask_dance.consumer.storage.sqla import SQLAlchemyStorage
-from flask_dance.contrib.google import google, make_google_blueprint
 from flask_jwt import current_identity, jwt_required
-from flask_login import current_user
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy_paginator import Paginator
 
 from api.route.error_messages import ErrMsgEnum
@@ -20,25 +15,10 @@ from api.schema.signin import SignInSchema
 from api.schema.user import UserSchema
 from core.db import db
 from core.redis import redis
-from core.settings import settings
-from models.db_models import OAuth, User
+from models.db_models import User
 from models.login_history import Login
 
 users_api = Blueprint("users", __name__)
-
-google_blueprint = make_google_blueprint(
-    client_id=settings.oauth.google_client_id,
-    client_secret=settings.oauth.google_secret,
-    scope=['https://www.googleapis.com/auth/userinfo.email',
-           'openid',
-           'https://www.googleapis.com/auth/userinfo.profile'],
-    storage=SQLAlchemyStorage(
-        OAuth,
-        db.session,
-        user=current_user,
-        user_required=False,
-    ),
-)
 
 CACHE_EXPIRE_IN_SECONDS = 60 * 60 * 24 * 7
 PAGE_SIZE = 10
@@ -363,87 +343,3 @@ def refresh():
     else:
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
 
-# create/login local user on successful OAuth login
-@oauth_authorized.connect_via(google_blueprint)
-def google_logged_in(blueprint, token):
-    if google.authorized:
-        resp = google.get("/oauth2/v1/userinfo")
-        google_info = resp.json()
-        google_user_id = str(google_info["id"])
-
-        # Find this OAuth token in the database, or create it
-        query = OAuth.query.filter_by(
-            provider=blueprint.name,
-            provider_user_id=google_user_id,
-        )
-        try:
-            oauth = query.one()
-        except NoResultFound:
-            oauth = OAuth(
-                provider=blueprint.name,
-                provider_user_id=google_user_id,
-                token=token,
-            )
-        email = google_info["email"]
-        if oauth.user:
-            # If this OAuth token already has an associated local account,
-            # log in that local user account.
-            # Note that if we just created this OAuth token, then it can't
-            # have an associated local account yet.
-            user = User.query.filter_by(login=email).first()
-
-        else:
-            # If this OAuth token doesn't have an associated local account,
-            # create a new local user account for this user. We can log
-            # in that account as well, while we're at it.
-            new_user = User(
-                # Remember that `email` can be None, if the user declines
-                # to publish their email address on Google!
-                login=email,
-                plain_password="",
-            )
-            # Associate the new local user account with the OAuth token
-            oauth.user = new_user
-            # Save and commit our database models
-            db.session.add_all([new_user, oauth])
-            db.session.commit()
-            # Log in the new local user account
-            user = User.query.filter_by(login=email).first()
-            access_token = User.encode_auth_token(user.id, None, datetime.timedelta(days=0, minutes=10))
-            refresh_token = User.encode_auth_token(user.id, None, datetime.timedelta(days=7))
-            ret = {
-                "access_token": access_token.decode("utf-8"),
-                "refresh_token": refresh_token.decode("utf-8"),
-            }
-
-            user_agent = request.headers["User-Agent"]
-
-            login_user = Login(
-                login=email,
-                dt=datetime.datetime.utcnow(),
-                ip=request.remote_addr,
-                user_agent=user_agent,
-            )
-            db.session.add(login_user)
-            db.session.commit()
-
-            redis.set(
-                f"refresh_token:{user.id}:{user_agent}",
-                refresh_token.decode("utf-8"),
-                ex=CACHE_EXPIRE_IN_SECONDS,
-            )
-
-            redis.set(
-                refresh_token.decode("utf-8"),
-                f"{user.id}::{user.roles}",
-                ex=CACHE_EXPIRE_IN_SECONDS,
-            )
-
-            return jsonify(ret), HTTPStatus.CREATED
-
-        # Since we're manually creating the OAuth model in the database,
-        # we should return False so that Flask-Dance knows that
-        # it doesn't have to do it. If we don't return False, the OAuth token
-        # could be saved twice, or Flask-Dance could throw an error when
-        # trying to incorrectly save it for us.
-        return False

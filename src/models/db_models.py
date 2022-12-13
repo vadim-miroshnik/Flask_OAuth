@@ -14,6 +14,7 @@ from pbkdf2 import crypt
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
+from flask_login import UserMixin
 
 from core.db import db
 from core.settings import settings
@@ -27,7 +28,7 @@ association_user_roles = db.Table(
 )
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
     id = db.Column(
         UUID(as_uuid=True),

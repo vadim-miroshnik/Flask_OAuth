@@ -6,7 +6,8 @@ from flask_jwt import JWT
 from flask_migrate import Migrate
 
 from api.route.crud import api_admin_permission, api_admin_role, api_admin_user
-from api.route.users import users_api, google_blueprint
+from api.route.users import users_api
+from api.route.oauth import google_blueprint
 from core.db import db
 from core.login_manager import authenticate, identity, login_manager
 from core.redis import redis
