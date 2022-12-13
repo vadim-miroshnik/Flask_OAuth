@@ -1,13 +1,12 @@
 """Login history db model"""
-import logging
 import uuid
 
-import datetime
 from sqlalchemy import DateTime, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
 from user_agents import parse
+
 from core.db import db
 
 
