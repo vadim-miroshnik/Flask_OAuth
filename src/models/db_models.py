@@ -10,7 +10,6 @@ import uuid
 
 import jwt
 from pbkdf2 import crypt
-from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql import func
@@ -18,7 +17,6 @@ from sqlalchemy.sql import func
 from core.db import db
 from core.settings import settings
 from models.uuid_encoder import UUIDEncoder
-
 
 association_user_roles = db.Table(
     "association_user_roles",
