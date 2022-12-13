@@ -1,6 +1,5 @@
 """Auth decorators"""
 
-import logging
 from functools import wraps
 from http import HTTPStatus
 
@@ -17,6 +16,7 @@ from models.db_models import Permission
 
 class Singleton(type):
     _instance = None
+
     def __call__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super().__call__(*args, **kwargs)
