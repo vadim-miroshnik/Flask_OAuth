@@ -7,17 +7,16 @@ from http import HTTPStatus
 from flasgger import swag_from
 from flask import Blueprint, jsonify, request, abort
 from flask_jwt import current_identity, jwt_required
+from sqlalchemy_paginator import Paginator
 
-from api.schema.login import LoginSchema, LoginsSchema
+from api.route.error_messages import ErrMsgEnum
+from api.schema.login import LoginsSchema
 from api.schema.signin import SignInSchema
 from api.schema.user import UserSchema
 from core.db import db
 from core.redis import redis
 from models.db_models import User
 from models.login_history import Login
-from api.route.error_messages import ErrMsgEnum
-from sqlalchemy_paginator import Paginator
-from user_agents import parse
 
 users_api = Blueprint("users", __name__)
 
