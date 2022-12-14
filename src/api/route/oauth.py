@@ -95,13 +95,14 @@ def index():
         "refresh_token": refresh_token.decode("utf-8"),
     }
     user_agent = request.headers["User-Agent"]
-    login_user = Login(
-        login=user.login,
-        dt=datetime.datetime.utcnow(),
-        ip=request.remote_addr,
-        user_agent=user_agent,
-    )
-    db.session.add(login_user)
+    user.signin.append(
+                Login(
+                    login=user.login,
+                    dt=datetime.datetime.utcnow(),
+                    ip=request.remote_addr,
+                    raw_user_agent=user_agent,
+                )
+            )
     db.session.commit()
     redis.set(
         f"refresh_token:{user.id}:{user_agent}",
