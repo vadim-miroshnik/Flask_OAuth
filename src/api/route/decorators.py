@@ -6,9 +6,7 @@ from http import HTTPStatus
 from flask_jwt import current_identity
 from flask import abort
 
-from rate_limiter.limiter import DurationEnum
 from rate_limiter.limiter import Limiter
-from rate_limiter.request_rate import RequestRate
 from rate_limiter.redis_bucket import RedisBucket
 
 from models.db_models import Permission
@@ -77,8 +75,7 @@ def rate_limit(reqs_in_sec, get_user=login_user):
         @wraps(func)
         def inner(*args, **kwargs):
             if not (limiter := rates.get(reqs_in_sec)):
-                rate = RequestRate(reqs_in_sec, DurationEnum.SECOND)
-                limiter = Limiter[RedisBucket](rate)
+                limiter = Limiter[RedisBucket](reqs_in_sec)
                 rates[reqs_in_sec] = limiter
 
             current_user = get_user()

@@ -1,23 +1,12 @@
 """Ограничитель запросов, использующий алгоритм протекающего ведра."""
 
-from enum import IntEnum
 from time import monotonic
 from typing import Callable, Generic, TypeVar, Union
-import logging
 
 from rate_limiter.decorator import LimitDecorator
 from rate_limiter.exceptions import BucketFullException, InvalidParams
-from rate_limiter.request_rate import RequestRate
 
 T = TypeVar("T")
-
-
-class DurationEnum(IntEnum):
-    SECOND = 1
-    MINUTE = 60
-    HOUR = 3600
-    DAY = 3600 * 24
-    MONTH = 3600 * 24 * 30
 
 
 class Limiter(Generic[T]):
@@ -25,7 +14,7 @@ class Limiter(Generic[T]):
 
     def __init__(
         self,
-        *rates: RequestRate,
+        *rates: list[int],
         bucket_kwargs: dict[str, any] = None,
         time_function: Callable[[], float] = None,
     ):
@@ -46,7 +35,7 @@ class Limiter(Generic[T]):
         for idx, rate in enumerate(rates[1:]):
             prev_rate = rates[idx]
             invalid = (
-                rate.limit <= prev_rate.limit or rate.interval <= prev_rate.interval
+                rate <= prev_rate
             )
             if invalid:
                 raise InvalidParams(f"{prev_rate} cannot come before {rate}")
@@ -54,7 +43,7 @@ class Limiter(Generic[T]):
     def _init_buckets(self, identities) -> None:
         """Инициализация корзины."""
         typ = self.__orig_class__.__args__[0]
-        maxsize = self._rates[-1].limit
+        maxsize = self._rates[-1]
         for identity in sorted(identities):
             if not self.bucket_group.get(identity):
                 self.bucket_group[identity] = typ(
@@ -71,13 +60,13 @@ class Limiter(Generic[T]):
                 bucket = self.bucket_group[identity]
                 volume = bucket.size()
 
-                if volume < rate.limit:
+                if volume < rate:
                     continue
 
                 item_count, remaining_time = bucket.inspect_expired_items(
-                    now - rate.interval
+                    now - 1
                 )
-                if item_count >= rate.limit:
+                if item_count >= rate:
                     raise BucketFullException(identity, rate, remaining_time)
 
                 if rate is self._rates[-1]:
