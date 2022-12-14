@@ -346,27 +346,3 @@ def refresh():
         return jsonify(dict(access_token=access_token.decode("utf-8"))), HTTPStatus.OK
     else:
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
-
-@users_api.route("/test", methods=["GET"])
-@swag_from(
-    {
-        "tags": ["users"],
-        "responses": {
-            HTTPStatus.OK.value: {
-                "description": "Test",
-                "schema": {"type": "string"},
-            },
-            HTTPStatus.TOO_MANY_REQUESTS.value: {
-                "description": "Too many requests",
-                "schema": {"type": "string"},
-            },
-        },
-    }
-)
-#@limiter.ratelimit("test")
-@rate_limit(15)
-def test():
-    return "test", HTTPStatus.OK
-
-
-
