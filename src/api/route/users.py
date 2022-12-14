@@ -5,10 +5,12 @@ import logging
 from http import HTTPStatus
 
 from flasgger import swag_from
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, abort, jsonify, request
 from flask_jwt import current_identity, jwt_required
+from sqlalchemy_paginator import Paginator
 
-from api.schema.login import LoginSchema, LoginsSchema
+from api.route.error_messages import ErrMsgEnum
+from api.schema.login import LoginsSchema
 from api.schema.signin import SignInSchema
 from api.schema.user import UserSchema
 from core.db import db
@@ -18,19 +20,11 @@ from models.login_history import Login
 from api.route.error_messages import ErrMsgEnum
 from sqlalchemy_paginator import Paginator
 
-from time import time
-from rate_limiter.limiter import DurationEnum
-from rate_limiter.limiter import Limiter
-from rate_limiter.request_rate import RequestRate
-from rate_limiter.redis_bucket import RedisBucket
-from api.route.decorators import rate_limit
 
 users_api = Blueprint("users", __name__)
 
 CACHE_EXPIRE_IN_SECONDS = 60 * 60 * 24 * 7
 PAGE_SIZE = 10
-
-limiter = Limiter[RedisBucket](RequestRate(10, DurationEnum.SECOND), time_function=time)
 
 @users_api.route("/register", methods=["POST"])
 @swag_from(
@@ -72,13 +66,14 @@ def register():
 
         user_agent = request.headers["User-Agent"]
 
-        login_user = Login(
-            login=login,
-            dt=datetime.datetime.utcnow(),
-            ip=request.remote_addr,
-            user_agent=user_agent,
+        user.signin.append(
+            Login(
+                login=login,
+                dt=datetime.datetime.utcnow(),
+                ip=request.remote_addr,
+                raw_user_agent=user_agent,
+            )
         )
-        db.session.add(login_user)
         db.session.commit()
 
         redis.set(
@@ -134,14 +129,15 @@ def login():
                 }
 
                 user_agent = request.headers["User-Agent"]
-
-                login_user = Login(
-                    login=login,
-                    dt=datetime.datetime.utcnow(),
-                    ip=request.remote_addr,
-                    user_agent=user_agent,
+                logging.info(user_agent)
+                user.signin.append(
+                    Login(
+                        login=login,
+                        dt=datetime.datetime.utcnow(),
+                        ip=request.remote_addr,
+                        raw_user_agent=user_agent,
+                    )
                 )
-                db.session.add(login_user)
                 db.session.commit()
 
                 redis.set(
@@ -291,7 +287,7 @@ def update_user():
                 "description": "JWT token",
                 "schema": {"type": "string"},
             },
-            {"in": "path", "name": "page", "schema": {"type": "int"}}
+            {"in": "path", "name": "page", "schema": {"type": "int"}},
         ],
         "responses": {
             int(HTTPStatus.OK): {

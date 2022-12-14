@@ -28,6 +28,8 @@ services:
       SUPERUSER__USERNAME: ${SUPERUSER__USERNAME}
       SUPERUSER__PASSWORD: ${SUPERUSER__PASSWORD}
       APP__JWT_SECRET_KEY: ${APP__JWT_SECRET_KEY}
+    env_file:
+      - .env
     networks:
       - movies
     depends_on:

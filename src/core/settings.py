@@ -4,7 +4,7 @@ import logging
 from logging import config as logging_config
 from pathlib import Path
 
-from pydantic import BaseSettings, BaseModel, Field
+from pydantic import BaseModel, BaseSettings, Field
 
 from core.logger import LOGGING
 
@@ -34,10 +34,16 @@ class App(BaseModel):
     kdf_algorithm: str = "p5k2"
 
 
+class OAuth(BaseModel):
+    google_client_id: str
+    google_secret: str
+
+
 class Settings(BaseSettings):
     redis: Redis
     postgres: Postgres
     app: App
+    oauth: OAuth
     superuser: Superuser
     debug: bool = Field(False)
 
@@ -51,11 +57,10 @@ settings = Settings()
 
 class AppSettings:
     SWAGGER = {"title": "Auth API", "description": "Auth service", "version": "1.0.0"}
-    SQLALCHEMY_DATABASE_URI = (
-        f"postgresql://{settings.postgres.user}:{settings.postgres.password}@{settings.postgres.host}/auth"
-    )
+    SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.postgres.user}:{settings.postgres.password}@{settings.postgres.host}/auth"
     REDIS_URL = f"redis://{settings.redis.host}:{settings.redis.port}/0"
     JWT_SECRET_KEY = base64.b64decode(settings.app.jwt_secret_key)
+    SECRET_KEY = "192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf"
 
 
 if settings.debug:
