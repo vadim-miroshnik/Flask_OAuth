@@ -5,7 +5,7 @@ import logging
 from http import HTTPStatus
 
 from flasgger import swag_from
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, abort, jsonify, request
 from flask_jwt import current_identity, jwt_required
 from sqlalchemy_paginator import Paginator
 
