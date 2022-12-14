@@ -1,10 +1,11 @@
 """Bucket exceptions."""
 
+from typing import Union
 
 class BucketFullException(Exception):
     def __init__(self, identity: str, rate: "RequestRate", remaining_time: float):
         error = f"Bucket for {identity} with Rate {rate} is already full"
-        self.meta_info: dict[str, str | float] = {
+        self.meta_info: dict[str, Union[str, float]] = {
             "error": error,
             "identity": identity,
             "rate": str(rate),
