@@ -32,6 +32,7 @@ class App(BaseModel):
     psw_hash_iterations: int = 1000
     salt_length: int = 20
     kdf_algorithm: str = "p5k2"
+    flask_secret_key: str
 
 
 class OAuth(BaseModel):
@@ -60,7 +61,7 @@ class AppSettings:
     SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.postgres.user}:{settings.postgres.password}@{settings.postgres.host}/auth"
     REDIS_URL = f"redis://{settings.redis.host}:{settings.redis.port}/0"
     JWT_SECRET_KEY = base64.b64decode(settings.app.jwt_secret_key)
-    SECRET_KEY = "192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf"
+    SECRET_KEY = settings.app.flask_secret_key
 
 
 if settings.debug:
