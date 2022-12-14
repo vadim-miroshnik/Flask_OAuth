@@ -40,6 +40,7 @@ class User(db.Model, UserMixin):
     login = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     roles = db.relationship("Role", secondary=association_user_roles)
+    signin = db.relationship("Login", cascade="all,delete")
 
     @hybrid_property
     def plain_password(self):

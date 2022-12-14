@@ -21,3 +21,4 @@ Flask-Migrate==4.0.0
 psycogreen==1.0.2
 blinker==1.5
 Flask-Dance==6.2.0
+user-agents==2.2.0
