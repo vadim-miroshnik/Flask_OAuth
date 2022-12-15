@@ -17,12 +17,11 @@ services:
 
   auth:
     container_name: auth
-    build:
-      dockerfile: Dockerfile2
-      context: ./src
+    build: ./src
     image: auth
     environment:
       REDIS__HOST: redis
+      JAEGER__HOST: jaeger
       POSTGRES__HOST: postgres
       POSTGRES__USER: ${POSTGRES__USER}
       POSTGRES__PASSWORD: ${POSTGRES__PASSWORD}
@@ -45,6 +44,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
       - movies
+    restart: unless-stopped
 
   postgres:
     container_name: postgres_container
@@ -73,6 +73,8 @@ services:
     depends_on:
       - nginx
     restart: always
+    networks:
+      - movies
 
 networks:
     movies:

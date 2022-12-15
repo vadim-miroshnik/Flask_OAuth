@@ -39,12 +39,18 @@ class OAuth(BaseModel):
     google_secret: str
 
 
+class Jaeger(BaseModel):
+    host: str = Field("127.0.0.1")
+    port: int = Field(6831)
+
+
 class Settings(BaseSettings):
     redis: Redis
     postgres: Postgres
     app: App
     oauth: OAuth
     superuser: Superuser
+    jaeger: Jaeger
     debug: bool = Field(False)
 
     class Config:
@@ -57,7 +63,9 @@ settings = Settings()
 
 class AppSettings:
     SWAGGER = {"title": "Auth API", "description": "Auth service", "version": "1.0.0"}
-    SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.postgres.user}:{settings.postgres.password}@{settings.postgres.host}/auth"
+    SQLALCHEMY_DATABASE_URI = (
+        f"postgresql://{settings.postgres.user}:{settings.postgres.password}@{settings.postgres.host}/auth"
+    )
     REDIS_URL = f"redis://{settings.redis.host}:{settings.redis.port}/0"
     JWT_SECRET_KEY = base64.b64decode(settings.app.jwt_secret_key)
     SECRET_KEY = "192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf"
