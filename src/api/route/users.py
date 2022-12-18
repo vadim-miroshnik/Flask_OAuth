@@ -2,6 +2,7 @@
 
 import datetime
 import logging
+import time
 from http import HTTPStatus
 
 from flasgger import swag_from
@@ -17,6 +18,10 @@ from core.db import db
 from core.redis import redis
 from models.db_models import User
 from models.login_history import Login
+import requests
+from api.route.decorators import Trac
+from core.tracer import tracer
+from opentelemetry import trace
 
 users_api = Blueprint("users", __name__)
 
@@ -344,3 +349,91 @@ def refresh():
         return jsonify(dict(access_token=access_token.decode("utf-8"))), HTTPStatus.OK
     else:
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
+
+
+trac = Trac()
+
+
+@users_api.route("/test", methods=["GET"])
+@swag_from(
+    {
+        "tags": ["users"],
+        "parameters": [
+        ],
+        "responses": {
+            int(HTTPStatus.OK): {
+                "description": "Refresh",
+                "schema": {"type": "string"},
+            },
+            int(HTTPStatus.BAD_REQUEST): {
+                "description": "Bad request",
+                "schema": {"type": "string"},
+            },
+        },
+    }
+)
+#@trace_req()
+def test():
+    req_id = request.headers.get("X-Request-Id")
+    '''span = trace.get_current_span()
+    span.set_attribute("http.request_id", req_id)'''
+
+    #response = requests.get("http://127.0.0.1:8000/api/users/test2", headers={"X-Request-Id": req_id, "Connection": "close"}, timeout=3)
+
+    '''with requests.Session() as s:
+        s.get("http://127.0.0.1:8000/api/users/test2", headers={"X-Request-Id": req_id, "Connection": "close"},
+                    timeout=3)'''
+
+    span = trace.get_current_span()
+    trace_id = str(span.get_span_context().trace_id)
+    name = layer1("Test", trace_id=trace_id)
+    layer2("Test", trace_id=trace_id)
+    return req_id, 200
+
+
+@trac.trace
+def layer1(name: str):
+    name = name + "1"
+    return name #layer2(name)
+
+
+@trac.trace
+def layer2(name: str):
+    return name
+
+@users_api.route("/test2", methods=["GET"])
+@swag_from(
+    {
+        "tags": ["users"],
+        "parameters": [
+            {
+                "in": "header",
+                "name": "X-Request-Id",
+                "required": "true",
+                "description": "",
+                "schema": {"type": "string"},
+            },
+        ],
+        "responses": {
+            int(HTTPStatus.OK): {
+                "description": "Refresh",
+                "schema": {"type": "string"},
+            },
+            int(HTTPStatus.BAD_REQUEST): {
+                "description": "Bad request",
+                "schema": {"type": "string"},
+            },
+        },
+    }
+)
+#@trace_req()
+#@trac.trace
+def test2():
+    req_id = request.headers.get("X-Request-Id")
+    '''span = trace.get_current_span()
+    span.set_attribute("http.request_id", req_id)'''
+
+    '''with tracer.start_as_current_span("rootSpan"):
+        with tracer.start_as_current_span("childSpan"):
+            print("hello")'''
+    return req_id, 200
