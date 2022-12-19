@@ -6,6 +6,7 @@ from flask_jwt import JWT
 from flask_migrate import Migrate
 
 from api.route.crud import api_admin_permission, api_admin_role, api_admin_user
+from api.route.inter.user import inter_user
 from api.route.users import users_api
 from api.route.oauth import google_blueprint
 from core.db import db
@@ -23,6 +24,7 @@ app.register_blueprint(google_blueprint, url_prefix="/api/users/login")
 app.register_blueprint(api_admin_user, url_prefix="/api/admin/user")
 app.register_blueprint(api_admin_role, url_prefix="/api/admin/role")
 app.register_blueprint(api_admin_permission, url_prefix="/api/admin/permission")
+app.register_blueprint(inter_user, url_prefix="/api/inter/user")
 
 
 @app.errorhandler(404)
