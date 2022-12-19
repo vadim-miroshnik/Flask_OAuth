@@ -14,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 class Superuser(BaseModel):
     username: str
     password: str
+    email: str
 
 
 class Redis(BaseModel):
@@ -52,6 +53,7 @@ class Settings(BaseSettings):
     superuser: Superuser
     jaeger: Jaeger
     debug: bool = Field(False)
+    avro_path: Path = BASE_DIR.joinpath("src").joinpath("avro_schemes")
 
     class Config:
         env_file = BASE_DIR.joinpath(".env")
