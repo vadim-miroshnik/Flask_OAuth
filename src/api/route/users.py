@@ -10,7 +10,6 @@ from flask import Blueprint, abort, jsonify, request
 from flask_jwt import current_identity, jwt_required
 from sqlalchemy_paginator import Paginator
 
-from api.route.error_messages import ErrMsgEnum
 from api.schema.login import LoginsSchema
 from api.schema.signin import SignInSchema
 from api.schema.user import UserSchema
@@ -18,16 +17,20 @@ from core.db import db
 from core.redis import redis
 from models.db_models import User
 from models.login_history import Login
+
 import requests
-from api.route.decorators import Trac
 from core.tracer import tracer
 from opentelemetry import trace
+
+from api.route.error_messages import ErrMsgEnum
+from sqlalchemy_paginator import Paginator
+from api.route.decorators import rate_limit, Trac
+
 
 users_api = Blueprint("users", __name__)
 
 CACHE_EXPIRE_IN_SECONDS = 60 * 60 * 24 * 7
 PAGE_SIZE = 10
-
 
 @users_api.route("/register", methods=["POST"])
 @swag_from(
@@ -351,15 +354,10 @@ def refresh():
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
 
 
-trac = Trac()
-
-
 @users_api.route("/test", methods=["GET"])
 @swag_from(
     {
         "tags": ["users"],
-        "parameters": [
-        ],
         "responses": {
             int(HTTPStatus.OK): {
                 "description": "Refresh",
@@ -367,73 +365,14 @@ trac = Trac()
             },
             int(HTTPStatus.BAD_REQUEST): {
                 "description": "Bad request",
+            int(HTTPStatus.TOO_MANY_REQUESTS): {
+                "description": "Too many request",
                 "schema": {"type": "string"},
             },
         },
     }
 )
-#@trace_req()
+@rate_limit(5)
 def test():
     req_id = request.headers.get("X-Request-Id")
-    '''span = trace.get_current_span()
-    span.set_attribute("http.request_id", req_id)'''
-
-    #response = requests.get("http://127.0.0.1:8000/api/users/test2", headers={"X-Request-Id": req_id, "Connection": "close"}, timeout=3)
-
-    '''with requests.Session() as s:
-        s.get("http://127.0.0.1:8000/api/users/test2", headers={"X-Request-Id": req_id, "Connection": "close"},
-                    timeout=3)'''
-
-    span = trace.get_current_span()
-    trace_id = str(span.get_span_context().trace_id)
-    name = layer1("Test", trace_id=trace_id)
-    layer2("Test", trace_id=trace_id)
-    return req_id, 200
-
-
-@trac.trace
-def layer1(name: str):
-    name = name + "1"
-    return name #layer2(name)
-
-
-@trac.trace
-def layer2(name: str):
-    return name
-
-@users_api.route("/test2", methods=["GET"])
-@swag_from(
-    {
-        "tags": ["users"],
-        "parameters": [
-            {
-                "in": "header",
-                "name": "X-Request-Id",
-                "required": "true",
-                "description": "",
-                "schema": {"type": "string"},
-            },
-        ],
-        "responses": {
-            int(HTTPStatus.OK): {
-                "description": "Refresh",
-                "schema": {"type": "string"},
-            },
-            int(HTTPStatus.BAD_REQUEST): {
-                "description": "Bad request",
-                "schema": {"type": "string"},
-            },
-        },
-    }
-)
-#@trace_req()
-#@trac.trace
-def test2():
-    req_id = request.headers.get("X-Request-Id")
-    '''span = trace.get_current_span()
-    span.set_attribute("http.request_id", req_id)'''
-
-    '''with tracer.start_as_current_span("rootSpan"):
-        with tracer.start_as_current_span("childSpan"):
-            print("hello")'''
     return req_id, 200

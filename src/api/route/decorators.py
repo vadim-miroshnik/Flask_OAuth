@@ -1,17 +1,35 @@
 """Auth decorators"""
 
-import logging
 from functools import wraps
 from http import HTTPStatus
 
 from flask_jwt import current_identity
 from flask import abort, request
 
+from rate_limiter.limiter import Limiter
+from rate_limiter.redis_bucket import RedisBucket
+
 from models.db_models import Permission
 from opentelemetry import trace
 from core.tracer import tracer
 import inspect
 import opentracing
+
+
+class Singleton(type):
+    _instance = None
+
+    def __call__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super().__call__(*args, **kwargs)
+        return cls._instance
+
+
+class Rates(dict, metaclass=Singleton):
+    pass
+
+
+rates = Rates()
 
 
 def login_user():
@@ -22,7 +40,6 @@ def login_user():
         return current_identity
     except ImportError:
         abort(HTTPStatus.UNAUTHORIZED, description="User argument not passed")
-        #raise ImportError("User argument not passed")
 
 
 def user_has(permission, get_user=login_user):
@@ -66,27 +83,6 @@ def before_request():
     span.set_attribute("http.request_id", request_id)
 
 
-'''
-def trace_req():
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            before_request(func.__name__)
-            try:
-                response = func(*args, **kwargs)
-            except Exception as e:
-                # after_request_trace(request, error=e)
-                raise e
-            # else:
-                # after_request_trace(request, response)
-
-            return response
-
-        wrapper.__name__ = func.__name__
-        return wrapper
-
-    return decorator
-'''
-
 class Trac:
     def __init__(self) -> None:
         self.current_trace_id = None
@@ -99,7 +95,6 @@ class Trac:
             ins = inspect.stack()[1][3]
             with tracer.start_as_current_span(ins):
                 with tracer.start_as_current_span(func.__name__):
-                    print("--hello--")
                     span = trace.get_current_span()
                     span.set_attribute("test", "test")
             if trace_id:
@@ -114,3 +109,23 @@ class Trac:
             else:
                 return func(*args, **kwargs)
         return wrapper
+
+
+def rate_limit(reqs_in_sec, get_user=login_user):
+    def wrapper(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            if not (limiter := rates.get(reqs_in_sec)):
+                limiter = Limiter[RedisBucket](reqs_in_sec)
+                rates[reqs_in_sec] = limiter
+
+            current_user = get_user()
+            if not current_user:
+                current_user = "Anonymous"
+
+            with limiter.ratelimit(current_user, delay=False):
+                return func(*args, **kwargs)
+
+        return inner
+
+    return wrapper
