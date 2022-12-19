@@ -8,7 +8,6 @@ from http import HTTPStatus
 from flasgger import swag_from
 from flask import Blueprint, abort, jsonify, request
 from flask_jwt import current_identity, jwt_required
-from sqlalchemy_paginator import Paginator
 
 from api.schema.login import LoginsSchema
 from api.schema.signin import SignInSchema
@@ -17,10 +16,6 @@ from core.db import db
 from core.redis import redis
 from models.db_models import User
 from models.login_history import Login
-
-import requests
-from core.tracer import tracer
-from opentelemetry import trace
 
 from api.route.error_messages import ErrMsgEnum
 from sqlalchemy_paginator import Paginator
@@ -365,6 +360,7 @@ def refresh():
             },
             int(HTTPStatus.BAD_REQUEST): {
                 "description": "Bad request",
+            },
             int(HTTPStatus.TOO_MANY_REQUESTS): {
                 "description": "Too many request",
                 "schema": {"type": "string"},
