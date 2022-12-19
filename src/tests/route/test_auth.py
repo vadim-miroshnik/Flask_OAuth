@@ -31,6 +31,7 @@ class TestUsers(unittest.TestCase):
                 "api/users/register",
                 data=json.dumps(dict(login=login, password=password)),
                 content_type="application/json",
+                headers={"X-Request-Id": 123456789},
             )
             data = json.loads(response.data.decode())
             access_token = data["access_token"]
@@ -48,6 +49,7 @@ class TestUsers(unittest.TestCase):
                 "api/users/login",
                 data=json.dumps(dict(login=login, password=password)),
                 content_type="application/json",
+                headers={"X-Request-Id": 1},
             )
             self.assertEqual(response.status_code, 201)
 
@@ -58,6 +60,7 @@ class TestUsers(unittest.TestCase):
                 "api/users/login",
                 data=json.dumps(dict(login=login, password=password + "_")),
                 content_type="application/json",
+                headers={"X-Request-Id": 1},
             )
             self.assertEqual(response.status_code, 400)
 
@@ -70,7 +73,7 @@ class TestUsers(unittest.TestCase):
         with self.client:
             response = self.client.put(
                 "api/users/profile",
-                headers={"Authorization": "JWT " + access_token},
+                headers={"Authorization": "JWT " + access_token, "X-Request-Id": 1},
                 data=json.dumps(dict(login=login, password=password)),
                 content_type="application/json",
             )
@@ -80,14 +83,21 @@ class TestUsers(unittest.TestCase):
         global access_token
         global refresh_token
         with self.client:
-            response = self.client.post("api/users/refresh", data=refresh_token, content_type="application/json")
+            response = self.client.post(
+                "api/users/refresh",
+                data=refresh_token,
+                content_type="application/json",
+                headers={"X-Request-Id": 1},
+            )
             self.assertEqual(response.status_code, 200)
 
     def step_06_login_history(self):
         global access_token
         with self.client:
             response = self.client.get(
-                "api/users/history/1", headers={"Authorization": "JWT " + access_token}, content_type="application/json"
+                "api/users/history/1",
+                headers={"Authorization": "JWT " + access_token, "X-Request-Id": 1},
+                content_type="application/json",
             )
             self.assertEqual(response.status_code, 200)
             data = json.loads(response.data.decode())
@@ -98,7 +108,9 @@ class TestUsers(unittest.TestCase):
         global access_token
         with self.client:
             response = self.client.post(
-                "api/users/logout", headers={"Authorization": "JWT " + access_token}, content_type="application/json"
+                "api/users/logout",
+                headers={"Authorization": "JWT " + access_token, "X-Request-Id": 1},
+                content_type="application/json",
             )
             self.assertEqual(response.status_code, 201)
 
