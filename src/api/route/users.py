@@ -112,7 +112,7 @@ def login():
     if content_type == "application/json":
         login = request.json["login"]
         password = request.json["password"]
-        if not login and not password:
+        if not login or not password:
             abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.INPUT_ERROR)
         if not (user := User.query.filter_by(login=login).first()):
             abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.LOGIN_NOT_EXISTS)

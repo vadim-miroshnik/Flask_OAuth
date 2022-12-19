@@ -3,13 +3,14 @@
 import datetime
 from http import HTTPStatus
 
-from flask import jsonify, redirect, request, url_for
+from flask import abort, jsonify, redirect, request, url_for
 from flask_dance.consumer import oauth_authorized
 from flask_dance.consumer.storage.sqla import SQLAlchemyStorage
 from flask_dance.contrib.google import google, make_google_blueprint
 from flask_login import current_user, login_user
 from sqlalchemy.orm.exc import NoResultFound
 
+from api.route.error_messages import ErrMsgEnum
 from core.db import db
 from core.redis import redis
 from core.settings import settings
@@ -19,10 +20,11 @@ from models.login_history import Login
 google_blueprint = make_google_blueprint(
     client_id=settings.oauth.google_client_id,
     client_secret=settings.oauth.google_secret,
-    redirect_to=".index",
+#    redirect_to=".after",
     scope=['https://www.googleapis.com/auth/userinfo.email',
            'openid',
            'https://www.googleapis.com/auth/userinfo.profile'],
+    authorized_url="/authorized",
     storage=SQLAlchemyStorage(
         OAuth,
         db.session,
@@ -41,7 +43,7 @@ def google_logged_in(blueprint, token):
         resp = google.get("/oauth2/v1/userinfo")
         google_info = resp.json()
         google_user_id = str(google_info["id"])
-
+        email = google_info["email"]
         # Find this OAuth token in the database, or create it
         query = OAuth.query.filter_by(
             provider=blueprint.name,
@@ -50,17 +52,19 @@ def google_logged_in(blueprint, token):
         try:
             oauth = query.one()
         except NoResultFound:
-            oauth = OAuth(
-                provider=blueprint.name,
-                provider_user_id=google_user_id,
-                token=token,
-            )
-        email = google_info["email"]
+            user = User.query.filter_by(login=email).first()
+            if user:
+                abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.LOGIN_EXISTS)
+            else:
+                oauth = OAuth(
+                    provider=blueprint.name,
+                    provider_user_id=google_user_id,
+                    token=token,
+                )
         if not oauth.user:
             user = User.query.filter_by(login=email).first()
             if user:
-                oauth.user = user
-                db.session.add_all([oauth])
+                abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.LOGIN_EXISTS)
             else:
                 # If this OAuth token doesn't have an associated local account,
                 # create a new local user account for this user. We can log
