@@ -31,7 +31,7 @@ class TestUsers(unittest.TestCase):
                 "api/users/register",
                 data=json.dumps(dict(login=login, password=password)),
                 content_type="application/json",
-                headers={"X-Request-Id": 1},
+                headers={"X-Request-Id": 123456789},
             )
             data = json.loads(response.data.decode())
             access_token = data["access_token"]

@@ -42,7 +42,7 @@ services:
       SUPERUSER__PASSWORD: ${SUPERUSER__PASSWORD}
     networks:
       - movies
-    entrypoint: "bash -c 'python3 app_init.py && python3 -m unittest discover -s tests'"
+    entrypoint: "bash -c 'flask db upgrade && python3 app_init.py && python3 -m unittest discover -s tests'"
     env_file:
       - .env
     depends_on:
