@@ -33,6 +33,7 @@ services:
     environment:
       REDIS__HOST: redis
       POSTGRES__HOST: postgres
+      JAEGER__HOST: jaeger
       POSTGRES__USER: ${POSTGRES__USER}
       POSTGRES__PASSWORD: ${POSTGRES__PASSWORD}
       POSTGRES__DB_NAME: ${POSTGRES__DB_NAME}
@@ -42,6 +43,8 @@ services:
     networks:
       - movies
     entrypoint: "bash -c 'python3 app_init.py && python3 -m unittest discover -s tests'"
+    env_file:
+      - .env
     depends_on:
       - redis
       - postgres
