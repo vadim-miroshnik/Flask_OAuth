@@ -21,6 +21,7 @@ services:
     image: auth
     environment:
       REDIS__HOST: redis
+      JAEGER__HOST: jaeger
       POSTGRES__HOST: postgres
       POSTGRES__USER: ${POSTGRES__USER}
       POSTGRES__PASSWORD: ${POSTGRES__PASSWORD}
@@ -43,6 +44,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
       - movies
+    restart: unless-stopped
 
   postgres:
     container_name: postgres_container
@@ -60,6 +62,19 @@ services:
       - movies
     restart: unless-stopped
 
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - 16686:16686
+    command:
+      - "--log-level=debug"
+    depends_on:
+      - nginx
+    restart: always
+    networks:
+      - movies
 
 networks:
     movies:

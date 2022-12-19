@@ -4,12 +4,16 @@ from functools import wraps
 from http import HTTPStatus
 
 from flask_jwt import current_identity
-from flask import abort
+from flask import abort, request
 
 from rate_limiter.limiter import Limiter
 from rate_limiter.redis_bucket import RedisBucket
 
 from models.db_models import Permission
+from opentelemetry import trace
+from core.tracer import tracer
+import inspect
+import opentracing
 
 
 class Singleton(type):
@@ -70,6 +74,43 @@ def user_is(role, get_user=login_user):
     return wrapper
 
 
+def before_request():
+    request_id = request.headers.get("X-Request-Id")
+    if not request_id:
+        raise RuntimeError("request id is required")
+
+    span = trace.get_current_span()
+    span.set_attribute("http.request_id", request_id)
+
+
+class Trac:
+    def __init__(self) -> None:
+        self.current_trace_id = None
+
+    def trace(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            before_request()
+            trace_id = kwargs.pop("trace_id", None)
+            ins = inspect.stack()[1][3]
+            with tracer.start_as_current_span(ins):
+                with tracer.start_as_current_span(func.__name__):
+                    span = trace.get_current_span()
+                    span.set_attribute("test", "test")
+            if trace_id:
+                if self.current_trace_id:
+                    raise
+                self.current_trace_id = trace_id
+                res = func(*args, **kwargs)
+                self.current_trace_id = None
+                return res
+            elif self.current_trace_id:
+                return func(*args, **kwargs)
+            else:
+                return func(*args, **kwargs)
+        return wrapper
+
+
 def rate_limit(reqs_in_sec, get_user=login_user):
     def wrapper(func):
         @wraps(func)
@@ -88,4 +129,3 @@ def rate_limit(reqs_in_sec, get_user=login_user):
         return inner
 
     return wrapper
-

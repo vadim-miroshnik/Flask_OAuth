@@ -1,7 +1,7 @@
 run_environment:
 	cp .env.example .env
 	# COMPOSE_PROJECT_NAME используется для именования volumes
-	COMPOSE_PROJECT_NAME=auth docker-compose up -d redis postgres pgadmin
+	COMPOSE_PROJECT_NAME=auth docker-compose up -d redis postgres pgadmin jaeger
 
 run_service:
 	COMPOSE_PROJECT_NAME=auth docker-compose up --build auth

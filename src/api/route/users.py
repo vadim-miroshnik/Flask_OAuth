@@ -2,12 +2,12 @@
 
 import datetime
 import logging
+import time
 from http import HTTPStatus
 
 from flasgger import swag_from
 from flask import Blueprint, abort, jsonify, request
 from flask_jwt import current_identity, jwt_required
-from sqlalchemy_paginator import Paginator
 
 from api.schema.login import LoginsSchema
 from api.schema.signin import SignInSchema
@@ -16,9 +16,11 @@ from core.db import db
 from core.redis import redis
 from models.db_models import User
 from models.login_history import Login
+
 from api.route.error_messages import ErrMsgEnum
 from sqlalchemy_paginator import Paginator
-from api.route.decorators import rate_limit
+from api.route.decorators import rate_limit, Trac
+
 
 users_api = Blueprint("users", __name__)
 
@@ -346,6 +348,7 @@ def refresh():
     else:
         abort(HTTPStatus.BAD_REQUEST, description=ErrMsgEnum.NO_REFRESH_TOKEN)
 
+
 @users_api.route("/test", methods=["GET"])
 @swag_from(
     {
@@ -354,6 +357,9 @@ def refresh():
             int(HTTPStatus.OK): {
                 "description": "Refresh",
                 "schema": {"type": "string"},
+            },
+            int(HTTPStatus.BAD_REQUEST): {
+                "description": "Bad request",
             },
             int(HTTPStatus.TOO_MANY_REQUESTS): {
                 "description": "Too many request",
@@ -364,4 +370,5 @@ def refresh():
 )
 @rate_limit(5)
 def test():
-    return "", HTTPStatus.OK
+    req_id = request.headers.get("X-Request-Id")
+    return req_id, 200
