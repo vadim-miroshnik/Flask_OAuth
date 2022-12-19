@@ -12,9 +12,8 @@ class TestUsersInterract(unittest.TestCase):
     def test_steps(self):
         with self.client:
             response = self.client.get(
-                "/api/inter/user/", content_type="application/json"
+                "/api/inter/user/", content_type="application/json", headers={"X-Request-Id": 1}
             )
-
             self.assertEqual(response.status_code, 200)
             with open('users.avro', "wb") as file:
                 file.write(response.data)
