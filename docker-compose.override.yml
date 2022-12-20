@@ -40,8 +40,8 @@ services:
       APP__JWT_SECRET_KEY: ${APP__JWT_SECRET_KEY}
       SUPERUSER__USERNAME: ${SUPERUSER__USERNAME}
       SUPERUSER__PASSWORD: ${SUPERUSER__PASSWORD}
-      DISABLE_TRACE: True
-      DISABLE_LIMITER: True
+      DISABLE_TRACE: "True"
+      DISABLE_LIMITER: "True"
 
     networks:
       - movies
