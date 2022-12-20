@@ -1,20 +1,19 @@
 """Application"""
 
 from flasgger import Swagger
-from flask import Flask
-from flask import jsonify, request
+from flask import Flask, json, jsonify, request
 from flask_jwt import JWT
 from flask_migrate import Migrate
 from opentelemetry import trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.sdk.resources import Resource, SERVICE_NAME
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from werkzeug.exceptions import HTTPException
 
 from api.route.crud import api_admin_permission, api_admin_role, api_admin_user
 from api.route.inter.user import inter_user
-from api.route.users import users_api
 from api.route.oauth import google_blueprint
 from api.route.users import users_api
 from core.db import db
@@ -24,7 +23,9 @@ from core.settings import AppSettings, settings
 
 
 def configure_tracer() -> None:
-    trace.set_tracer_provider(TracerProvider(resource=Resource.create({SERVICE_NAME: "auth"})))
+    trace.set_tracer_provider(
+        TracerProvider(resource=Resource.create({SERVICE_NAME: "auth"}))
+    )
     trace.get_tracer_provider().add_span_processor(
         BatchSpanProcessor(
             JaegerExporter(
@@ -34,7 +35,9 @@ def configure_tracer() -> None:
         )
     )
     # Чтобы видеть трейсы в консоли
-    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(ConsoleSpanExporter())
+    )
 
 
 configure_tracer()
@@ -53,30 +56,28 @@ app.register_blueprint(api_admin_permission, url_prefix="/api/admin/permission")
 app.register_blueprint(inter_user, url_prefix="/api/inter/user")
 
 
+@app.errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    # start with the correct headers and status code from the error
+    response = e.get_response()
+    # replace the body with JSON
+    response.data = json.dumps(
+        {
+            "status_code": e.code,
+            "error": e.name,
+            "description": e.description,
+        }
+    )
+    response.content_type = "application/json"
+    return response
+
+
 @app.before_request
 def before_request():
     request_id = request.headers.get("X-Request-Id")
     if not request_id:
         raise RuntimeError("request id is required")
-
-
-@app.errorhandler(404)
-def resource_not_found(e):
-    return jsonify(error=str(e)), 404
-
-
-@app.errorhandler(400)
-def bad_request(e):
-    return jsonify(error=str(e)), 400
-
-
-@app.errorhandler(401)
-def unauthorized(e):
-    return jsonify(error=str(e)), 401
-
-@app.errorhandler(403)
-def forbidden(e):
-    return jsonify(error=str(e)), 403
 
 
 db.init_app(app)
