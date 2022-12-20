@@ -6,6 +6,7 @@ from http import HTTPStatus
 from flask_jwt import current_identity
 from flask import abort, request
 
+from core.settings import settings
 from rate_limiter.limiter import Limiter
 from rate_limiter.redis_bucket import RedisBucket
 
@@ -90,6 +91,8 @@ class Trac:
     def trace(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if settings.disable_trace:
+                return func(*args, **kwargs)
             before_request()
             trace_id = kwargs.pop("trace_id", None)
             ins = inspect.stack()[1][3]
@@ -115,6 +118,8 @@ def rate_limit(reqs_in_sec, get_user=login_user):
     def wrapper(func):
         @wraps(func)
         def inner(*args, **kwargs):
+            if settings.disable_limiter:
+                return func(*args, **kwargs)
             if not (limiter := rates.get(reqs_in_sec)):
                 limiter = Limiter[RedisBucket](reqs_in_sec)
                 rates[reqs_in_sec] = limiter

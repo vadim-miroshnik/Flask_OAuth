@@ -33,11 +33,11 @@ def configure_tracer() -> None:
             )
         )
     )
-    # Чтобы видеть трейсы в консоли
     trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 
-configure_tracer()
+if not settings.disable_trace:
+    configure_tracer()
 
 app = Flask(__name__, subdomain_matching=True)
 FlaskInstrumentor().instrument_app(app)
@@ -55,9 +55,10 @@ app.register_blueprint(inter_user, url_prefix="/api/inter/user")
 
 @app.before_request
 def before_request():
-    request_id = request.headers.get("X-Request-Id")
-    if not request_id:
-        raise RuntimeError("request id is required")
+    if not settings.disable_trace:
+        request_id = request.headers.get("X-Request-Id")
+        if not request_id:
+            raise RuntimeError("request id is required")
 
 
 @app.errorhandler(404)
@@ -73,6 +74,7 @@ def bad_request(e):
 @app.errorhandler(401)
 def unauthorized(e):
     return jsonify(error=str(e)), 401
+
 
 @app.errorhandler(403)
 def forbidden(e):

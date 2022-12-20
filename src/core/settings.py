@@ -43,6 +43,7 @@ class OAuth(BaseModel):
 class Jaeger(BaseModel):
     host: str = Field("127.0.0.1")
     port: int = Field(6831)
+    gui_port: int = Field(16686)
 
 
 class Settings(BaseSettings):
@@ -54,6 +55,8 @@ class Settings(BaseSettings):
     jaeger: Jaeger
     debug: bool = Field(False)
     avro_path: Path = BASE_DIR.joinpath("avro_schemes")
+    disable_trace: bool = Field(False)
+    disable_limiter: bool = Field(False)
 
     class Config:
         env_file = BASE_DIR.joinpath(".env")
