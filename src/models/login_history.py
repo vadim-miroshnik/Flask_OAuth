@@ -47,14 +47,17 @@ class Login(db.Model):
 
     @raw_user_agent.setter
     def raw_user_agent(self, plaintext):
-        user_agent = parse(plaintext)
-        if user_agent.is_mobile:
-            self.user_device_type = "mobile"
-        elif user_agent.is_pc:
-            self.user_device_type = "web"
-        else:
-            self.user_device_type = "other"
         self.user_agent = plaintext
+        try:
+            user_agent = parse(plaintext)
+            if user_agent.is_mobile:
+                self.user_device_type = "mobile"
+            elif user_agent.is_pc:
+                self.user_device_type = "web"
+            else:
+                self.user_device_type = "other"
+        except KeyError:
+            self.user_device_type = "error"
 
     def __repr__(self):
         return f"<UserSignIn {self.user_id}:{self.logged_in_at }>"
