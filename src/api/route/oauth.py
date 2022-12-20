@@ -56,28 +56,26 @@ def google_logged_in(blueprint, token):
                 token=token,
             )
         email = google_info["email"]
+        local_user = f'google-{google_user_id}'
         if not oauth.user:
-            user = User.query.filter_by(login=email).first()
+            user = User.query.filter_by(login=local_user).first()
             if user:
                 oauth.user = user
                 db.session.add_all([oauth])
             else:
                 # If this OAuth token doesn't have an associated local account,
-                # create a new local user account for this user. We can log
-                # in that account as well, while we're at it.
+                # create a new local user account for this user. 
                 new_user = User(
-                    # Remember that `email` can be None, if the user declines
-                    # to publish their email address on Google!
-                    login=email,
+                    login=local_user,
                     plain_password="",
+                    email=email
                 )
                 # Associate the new local user account with the OAuth token
                 oauth.user = new_user
-                # Save and commit our database models
                 db.session.add_all([new_user, oauth])
             db.session.commit()
         # Log in the new local user account
-        user = User.query.filter_by(login=email).first()
+        user = User.query.filter_by(login=local_user).first()
         login_user(user)
 
     return False
