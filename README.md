@@ -41,6 +41,7 @@ http://127.0.0.1/apidocs
 
     JWT eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzAyNTg0MDgsImlhdCI6MTY3MDI1NzgwOCwibmJmIjoxNjcwMjU3ODA4LCJzdWIiOiJcImI5NjZhOGVjMmZiNTRlYjFiNmRiMTYwZDMwZDQ1YzdkXCIiLCJyb2xlIjoic3VwZXJ1c2VyIn0.zwysTVm9vkkGYIVB76GyDfW47TlioP0tYuTxOyciSs0
 
+### Ограничитель запросов
 Для ограничения запросов к эндойнтам сервисов необходимо использовать декоратор @rare_limit с параметром, который представляет собой ограничение количества запросов в секунду для каждого авторизованного пользователя
 Для задержки выполнения запросов предусмотрен параметр delay в
         
@@ -61,4 +62,5 @@ http://127.0.0.1/apidocs
             return delay_time
         abort(429, description="Too many requests")
 
+### HTTP-заголовок для трассировки
 Добавлен дополнительный HTTP-заголовок X-Request-Id в NGINX для связки запросов. Проверка присутствия заголовка осуществляется в декораторе @app.before_request. 
