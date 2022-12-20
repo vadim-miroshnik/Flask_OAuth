@@ -26,9 +26,9 @@ inter_user = Blueprint("inter_user", __name__)
 def user_avro():
     parsed_schema = make_avsc_object(user_avro_scheme)
     scheme_file = settings.avro_path.joinpath("users.avro_schemes")
-    writer = DataFileWriter(open(scheme_file, "wb"), DatumWriter(), parsed_schema)
-    for user in User.query.all():
-        writer.append({"name": user.login, "pk": str(user.id), "email": user.email if user.email else ""})
-    writer.close()
+    with open(scheme_file, "wb") as file:
+        writer = DataFileWriter(file, DatumWriter(), parsed_schema)
+        for user in User.query.all():
+            writer.append({"name": user.login, "pk": str(user.id), "email": user.email if user.email else ""})
     return send_from_directory(settings.avro_path, "users.avro_schemes")
 

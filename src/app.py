@@ -40,7 +40,8 @@ def configure_tracer() -> None:
     )
 
 
-configure_tracer()
+if not settings.disable_trace:
+    configure_tracer()
 
 app = Flask(__name__, subdomain_matching=True)
 FlaskInstrumentor().instrument_app(app)
@@ -75,9 +76,10 @@ def handle_exception(e):
 
 @app.before_request
 def before_request():
-    request_id = request.headers.get("X-Request-Id")
-    if not request_id:
-        raise RuntimeError("request id is required")
+    if not settings.disable_trace:
+        request_id = request.headers.get("X-Request-Id")
+        if not request_id:
+            raise RuntimeError("request id is required")
 
 
 db.init_app(app)
