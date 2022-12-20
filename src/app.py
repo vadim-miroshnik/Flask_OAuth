@@ -33,11 +33,11 @@ def configure_tracer() -> None:
             )
         )
     )
-    # Чтобы видеть трейсы в консоли
     trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
 
-configure_tracer()
+if not settings.disable_trace:
+    configure_tracer()
 
 app = Flask(__name__, subdomain_matching=True)
 FlaskInstrumentor().instrument_app(app)
@@ -74,6 +74,7 @@ def bad_request(e):
 @app.errorhandler(401)
 def unauthorized(e):
     return jsonify(error=str(e)), 401
+
 
 @app.errorhandler(403)
 def forbidden(e):

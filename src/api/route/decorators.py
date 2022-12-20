@@ -118,6 +118,8 @@ def rate_limit(reqs_in_sec, get_user=login_user):
     def wrapper(func):
         @wraps(func)
         def inner(*args, **kwargs):
+            if settings.disable_limiter:
+                return func(*args, **kwargs)
             if not (limiter := rates.get(reqs_in_sec)):
                 limiter = Limiter[RedisBucket](reqs_in_sec)
                 rates[reqs_in_sec] = limiter
