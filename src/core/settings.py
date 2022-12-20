@@ -43,6 +43,7 @@ class OAuth(BaseModel):
 class Jaeger(BaseModel):
     host: str = Field("127.0.0.1")
     port: int = Field(6831)
+    gui_port: int = Field(16686)
 
 
 class Settings(BaseSettings):
