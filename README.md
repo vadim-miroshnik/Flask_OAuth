@@ -43,19 +43,22 @@ http://127.0.0.1/apidocs
 
 Для ограничения запросов к эндойнтам сервисов необходимо использовать декоратор @rare_limit с параметром, который представляет собой ограничение количества запросов в секунду для каждого авторизованного пользователя
 Для задержки выполнения запросов предусмотрен параметр delay в
-`    def ratelimit(
-        self,
-        *identities: str,
-        delay: bool = False,
-        max_delay: Union[int, float] = None,
-    )`, который используется при реализации декоратора в методе `def delay_or_reraise(self, err: BucketFullException) -> float`
+        
+    def ratelimit(
+            self,
+            *identities: str,
+            delay: bool = False,
+            max_delay: Union[int, float] = None,
+        ),
+   
+который используется при реализации декоратора в методе
+
+    def delay_or_reraise(self, err: BucketFullException) -> float`
 
 Если delay = False, то ответы будут сразу выдаваться с ошибкой 429:
 
-`        if self.delay and not exceeded_max_delay:`
-
-`            return delay_time`
-
-`        abort(429, description="Too many requests")`
+        if self.delay and not exceeded_max_delay:
+            return delay_time
+        abort(429, description="Too many requests")
 
 Добавлен дополнительный HTTP-заголовок X-Request-Id в NGINX для связки запросов. Проверка присутствия заголовка осуществляется в декораторе @app.before_request. 
