@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     jaeger: Jaeger
     debug: bool = Field(False)
     avro_path: Path = BASE_DIR.joinpath("avro_schemes")
+    disable_trace: bool = Field(False)
+    disable_limiter: bool = Field(False)
 
     class Config:
         env_file = BASE_DIR.joinpath(".env")
