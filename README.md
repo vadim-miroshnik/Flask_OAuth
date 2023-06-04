@@ -1,3 +1,8 @@
+Flask
+Flasgger
+Marshmallow
+SqlAlchemy
+
 ## Работа с проектом
 
 Запустить проект на продакшене:
