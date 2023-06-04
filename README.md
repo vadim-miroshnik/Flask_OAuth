@@ -2,6 +2,7 @@ Flask
 Flasgger
 Marshmallow
 SqlAlchemy
+Flask Dance
 
 ## Работа с проектом
 
